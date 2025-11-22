@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Checkbox } from "expo-checkbox";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   Image,
@@ -121,20 +121,25 @@ export default function Index() {
     }
   };
 
-  const onSearch = (query: string) => {
-    if (query === "") {
-      setTodos(oldTodos);
-    } else {
-      const filteredTodos = todos.filter((todo) =>
+  const onSearch = useCallback(
+    (query: string) => {
+      if (query === "") {
+        setTodos(oldTodos);
+        return;
+      }
+
+      const filtered = todos.filter((todo) =>
         todo.title.toLowerCase().includes(query.toLowerCase())
       );
-      setTodos(filteredTodos);
-    }
-  };
+
+      setTodos(filtered);
+    },
+    [todos, oldTodos] // dependencies used inside the function
+  );
 
   useEffect(() => {
     onSearch(searchQuery);
-  }, [searchQuery]);
+  }, [searchQuery, onSearch]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -165,17 +170,23 @@ export default function Index() {
         />
       </View>
 
-      <FlatList
-        data={[...todos].reverse()}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <ToDoItem
-            todo={item}
-            deleteTodo={deleteTodo}
-            handleDone={handleDone}
-          />
-        )}
-      />
+      {todos.length === 0 ? (
+        <View style={styles.noData}>
+          <Text style={styles.noDataText}>No tasks yet, Please add one</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={[...todos].reverse()}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <ToDoItem
+              todo={item}
+              deleteTodo={deleteTodo}
+              handleDone={handleDone}
+            />
+          )}
+        />
+      )}
 
       <KeyboardAvoidingView
         style={styles.footer}
@@ -296,5 +307,15 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 10,
     marginLeft: 20,
+  },
+  noData: {
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === "ios" ? 16 : 8,
+    marginBottom: 20,
+    marginTop: 200,
+  },
+  noDataText: {
+    fontSize: 20,
   },
 });
